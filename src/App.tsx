@@ -1,14 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
 
 type ProjectCategory = 'All' | 'Technology' | 'Creative' | 'Research';
+type ProjectType = 'web-application' | 'game' | 'downloadable-application' | 'library' | 'research' | 'creative' | 'experimental';
+type ProjectStatus = 'Details pending' | 'Planned' | 'In progress';
+
+type ProjectAction = {
+  href: string;
+  label?: string;
+  external?: boolean;
+  download?: boolean;
+};
 
 type Project = {
   id: number;
   category: Exclude<ProjectCategory, 'All'>;
-  eyebrow: string;
+  type: ProjectType;
   title: string;
   description: string;
+  overview: string;
+  status: ProjectStatus;
   accent: string;
+  preview?: string;
+  tools?: string[];
+  resources?: {
+    primary?: ProjectAction;
+    secondary?: ProjectAction;
+  };
 };
 
 const navigation = [
@@ -20,32 +37,114 @@ const navigation = [
   { label: 'Contact', href: '#contact' },
 ];
 
+const projectTypeLabels: Record<ProjectType, string> = {
+  'web-application': 'Web application',
+  game: 'Game',
+  'downloadable-application': 'Downloadable application',
+  library: 'Library / asset collection',
+  research: 'Research project',
+  creative: 'Creative project',
+  experimental: 'Experimental project',
+};
+
+const recommendedPrimaryActions: Record<ProjectType, string> = {
+  'web-application': 'Launch app',
+  game: 'Play game',
+  'downloadable-application': 'Get app',
+  library: 'Explore library',
+  research: 'Read research',
+  creative: 'View project',
+  experimental: 'Explore experiment',
+};
+
 const projects: Project[] = [
   {
     id: 1,
     category: 'Technology',
-    eyebrow: 'Project placeholder 01',
+    type: 'web-application',
     title: 'A future digital product',
     description: 'Reserved for a technical project summary, its purpose, and the role it played in the final outcome.',
+    overview: 'Reserved for the objective, contribution, development process, and outcome of a future web application.',
+    status: 'Details pending',
     accent: 'blue',
   },
   {
     id: 2,
     category: 'Creative',
-    eyebrow: 'Project placeholder 02',
-    title: 'A considered creative work',
-    description: 'Reserved for a creative case study that explains the idea, the process, and the finished experience.',
-    accent: 'gold',
+    type: 'game',
+    title: 'A future interactive experience',
+    description: 'Reserved for a game or interactive work, its central idea, and the experience it is designed to create.',
+    overview: 'Reserved for the game concept, player experience, development process, and final release details.',
+    status: 'Details pending',
+    accent: 'red',
   },
   {
     id: 3,
+    category: 'Technology',
+    type: 'downloadable-application',
+    title: 'A useful application in progress',
+    description: 'Reserved for a downloadable product and the practical problem it is intended to address.',
+    overview: 'Reserved for the application objective, supported platforms, contribution, and distribution details.',
+    status: 'Details pending',
+    accent: 'gold',
+  },
+  {
+    id: 4,
+    category: 'Technology',
+    type: 'library',
+    title: 'A considered resource library',
+    description: 'Reserved for a collection of reusable assets, references, or tools organized for future access.',
+    overview: 'Reserved for the library purpose, collection structure, maintenance approach, and intended audience.',
+    status: 'Details pending',
+    accent: 'green',
+  },
+  {
+    id: 5,
     category: 'Research',
-    eyebrow: 'Project placeholder 03',
+    type: 'research',
     title: 'An inquiry in progress',
     description: 'Reserved for research, writing, or experimentation that demonstrates curiosity and a clear point of view.',
+    overview: 'Reserved for the research question, method, contribution, supporting materials, and findings.',
+    status: 'Details pending',
+    accent: 'blue',
+  },
+  {
+    id: 6,
+    category: 'Creative',
+    type: 'creative',
+    title: 'A considered creative work',
+    description: 'Reserved for a creative case study that explains the idea, the process, and the finished experience.',
+    overview: 'Reserved for the creative brief, process, contribution, and outcome of a future project.',
+    status: 'Details pending',
+    accent: 'gold',
+  },
+  {
+    id: 7,
+    category: 'Research',
+    type: 'experimental',
+    title: 'An open-ended experiment',
+    description: 'Reserved for an unfinished or exploratory work where the process is part of the story.',
+    overview: 'Reserved for the experiment premise, current state, observations, and possible next steps.',
+    status: 'In progress',
     accent: 'green',
   },
 ];
+
+function getProjectActions(project: Project): Array<ProjectAction & { label: string; primary: boolean }> {
+  const actions: Array<ProjectAction & { label: string; primary: boolean }> = [];
+  const primary = project.resources?.primary;
+  const secondary = project.resources?.secondary;
+
+  if (primary) {
+    actions.push({ ...primary, label: primary.label ?? recommendedPrimaryActions[project.type], primary: true });
+  }
+
+  if (secondary) {
+    actions.push({ ...secondary, label: secondary.label ?? 'View supporting material', primary: false });
+  }
+
+  return actions;
+}
 
 const skills = [
   {
@@ -78,16 +177,19 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ProjectCategory>('All');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const visibleProjects = activeCategory === 'All'
     ? projects
     : projects.filter((project) => project.category === activeCategory);
+  const modalActions = selectedProject ? getProjectActions(selectedProject) : [];
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMenuOpen(false);
-        setSelectedProject(null);
       }
     };
 
@@ -95,7 +197,58 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (!selectedProject) {
+      triggerRef.current?.focus();
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedProject]);
+
   const closeMenu = () => setMenuOpen(false);
+  const closeProject = () => setSelectedProject(null);
+  const openProject = (project: Project, event: ReactMouseEvent<HTMLButtonElement>) => {
+    triggerRef.current = event.currentTarget;
+    setSelectedProject(project);
+  };
+
+  const handleModalKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeProject();
+      return;
+    }
+
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+    );
+
+    if (!focusableElements || focusableElements.length === 0) {
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
 
   return (
     <div className="site-shell">
@@ -219,11 +372,11 @@ function App() {
                   <div className="project-card-body">
                     <div className="project-meta">
                       <span>{project.category}</span>
-                      <span>Placeholder</span>
+                      <span>{projectTypeLabels[project.type]}</span>
                     </div>
                     <h3>{project.title}</h3>
                     <p>{project.description}</p>
-                    <button className="card-link" type="button" onClick={() => setSelectedProject(project)}>
+                    <button className="card-link" type="button" onClick={(event) => openProject(project, event)}>
                       View project brief <span aria-hidden="true">↗</span>
                     </button>
                   </div>
@@ -325,14 +478,72 @@ function App() {
       </footer>
 
       {selectedProject && (
-        <div className="modal-backdrop" role="presentation" onClick={() => setSelectedProject(null)}>
-          <div className="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" aria-label="Close project brief" onClick={() => setSelectedProject(null)}>×</button>
-            <span className="section-kicker">{selectedProject.category} / Brief placeholder</span>
+        <div className="modal-backdrop" role="presentation" onClick={closeProject}>
+          <div
+            ref={modalRef}
+            className="project-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-modal-title"
+            aria-describedby="project-modal-description"
+            onKeyDown={handleModalKeyDown}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button ref={closeButtonRef} className="modal-close" type="button" aria-label="Close project brief" onClick={closeProject}>×</button>
+            <span className="section-kicker">{selectedProject.category} / {projectTypeLabels[selectedProject.type]}</span>
             <h2 id="project-modal-title">{selectedProject.title}</h2>
-            <p>{selectedProject.description}</p>
-            <div className="modal-note">This space is ready for the project objective, contribution, process, and outcome once real portfolio content is available.</div>
-            <button className="button button-dark" type="button" onClick={() => setSelectedProject(null)}>Close brief</button>
+            <p id="project-modal-description" className="modal-description">{selectedProject.description}</p>
+
+            <div className="modal-meta">
+              <div className="modal-meta-item">
+                <span className="detail-label">Project type</span>
+                <span>{projectTypeLabels[selectedProject.type]}</span>
+              </div>
+              <div className="modal-meta-item">
+                <span className="detail-label">Status</span>
+                <span>{selectedProject.status}</span>
+              </div>
+            </div>
+
+            <div className="modal-overview">
+              <span className="detail-label">Overview</span>
+              <p>{selectedProject.overview}</p>
+            </div>
+
+            {selectedProject.preview && (
+              <div className="modal-overview">
+                <span className="detail-label">Preview</span>
+                <p>{selectedProject.preview}</p>
+              </div>
+            )}
+
+            {selectedProject.tools && selectedProject.tools.length > 0 && (
+              <div className="modal-tools">
+                <span className="detail-label">Tools</span>
+                <div className="tool-list">
+                  {selectedProject.tools.map((tool) => <span key={tool}>{tool}</span>)}
+                </div>
+              </div>
+            )}
+
+            {modalActions.length > 0 && (
+              <div className="modal-actions" aria-label="Project actions">
+                {modalActions.map((action) => (
+                  <a
+                    key={action.label}
+                    className={`button ${action.primary ? 'button-primary' : 'button-secondary'}`}
+                    href={action.href}
+                    target={action.external ? '_blank' : undefined}
+                    rel={action.external ? 'noreferrer' : undefined}
+                    download={action.download ? true : undefined}
+                  >
+                    {action.label} <span aria-hidden="true">↗</span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <button className="button button-dark modal-close-action" type="button" onClick={closeProject}>Close brief</button>
           </div>
         </div>
       )}
