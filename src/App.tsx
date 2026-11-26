@@ -1,4 +1,6 @@
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import { useHomepageMotion } from './useHomepageMotion';
 
 type ProjectCategory = 'All' | 'Technology' | 'Creative' | 'Research';
 type ProjectType = 'web-application' | 'game' | 'downloadable-application' | 'library' | 'research' | 'creative' | 'experimental';
@@ -177,6 +179,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ProjectCategory>('All');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const appRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -185,6 +188,9 @@ function App() {
     ? projects
     : projects.filter((project) => project.category === activeCategory);
   const modalActions = selectedProject ? getProjectActions(selectedProject) : [];
+  const prefersReducedMotion = useReducedMotion();
+
+  useHomepageMotion(appRef, selectedProject !== null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -251,8 +257,8 @@ function App() {
   };
 
   return (
-    <div className="site-shell">
-      <header className="site-header">
+    <div ref={appRef} className="site-shell">
+      <header className="site-header" data-animate="site-header">
         <div className="container header-inner">
           <a className="wordmark" href="#home" aria-label="WIYANTO home" onClick={closeMenu}>
             <span className="wordmark-name">WIYANTO</span>
@@ -291,20 +297,20 @@ function App() {
         <section className="hero-section navy-section" id="home">
           <div className="hero-grid container">
             <div className="hero-copy">
-              <p className="section-kicker light-kicker">Personal identity / digital portfolio</p>
-              <h1>Heritage meets <em>technology.</em></h1>
-              <p className="hero-intro">A thoughtful digital home for work, ideas, and the principles that shape them.</p>
-              <div className="hero-actions">
+              <p className="section-kicker light-kicker" data-animate="hero-label">Personal identity / digital portfolio</p>
+              <h1 data-animate="hero-headline">Heritage meets <em data-animate="hero-emphasis">technology.</em></h1>
+              <p className="hero-intro" data-animate="hero-intro">A thoughtful digital home for work, ideas, and the principles that shape them.</p>
+              <div className="hero-actions" data-animate="hero-actions">
                 <a className="button button-primary" href="#projects">View projects <span aria-hidden="true">↗</span></a>
                 <a className="button button-text-light" href="#about">About me <span aria-hidden="true">↓</span></a>
               </div>
-              <div className="hero-note">
+              <div className="hero-note" data-animate="hero-note">
                 <span className="hero-note-line" aria-hidden="true" />
                 <span>Initial portfolio structure — content will evolve with the work.</span>
               </div>
             </div>
 
-            <div className="emblem-placeholder" aria-label="Reserved area for the original WIYANTO emblem">
+            <div className="emblem-placeholder" data-animate="emblem" aria-label="Reserved area for the original WIYANTO emblem">
               <div className="placeholder-frame">
                 <span className="placeholder-mark">W</span>
                 <span className="placeholder-label">Original emblem<br />reserved for later integration</span>
@@ -317,11 +323,11 @@ function App() {
 
         <section className="about-section ivory-section section-padding" id="about">
           <div className="container about-grid">
-            <div className="section-intro">
+            <div className="section-intro" data-reveal>
               <p className="section-kicker">01 / About</p>
               <h2>A place for the story behind the work.</h2>
             </div>
-            <div className="about-content">
+            <div className="about-content" data-reveal>
               <p className="lead-copy">This section will introduce the person behind WIYANTO — the background, perspective, and interests that give the portfolio its context.</p>
               <div className="about-details">
                 <div className="detail-block">
@@ -340,7 +346,7 @@ function App() {
 
         <section className="projects-section navy-section section-padding" id="projects">
           <div className="container">
-            <div className="section-heading-row">
+            <div className="section-heading-row" data-reveal>
               <div className="section-intro">
                 <p className="section-kicker light-kicker">02 / Selected work</p>
                 <h2>Projects with room<br />for the real story.</h2>
@@ -350,26 +356,34 @@ function App() {
 
             <div className="filter-row" aria-label="Project categories">
               {(['All', 'Technology', 'Creative', 'Research'] as ProjectCategory[]).map((category) => (
-                <button
+                <motion.button
                   key={category}
                   className={`filter-button ${activeCategory === category ? 'is-active' : ''}`}
                   type="button"
                   aria-pressed={activeCategory === category}
                   onClick={() => setActiveCategory(category)}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
                 >
                   {category}
-                </button>
+                </motion.button>
               ))}
             </div>
 
-            <div className="project-grid">
+            <div className="project-grid" data-reveal-group>
               {visibleProjects.map((project) => (
-                <article className="project-card" key={project.id}>
+                <motion.article
+                  className="project-card"
+                  key={project.id}
+                  whileHover={prefersReducedMotion ? undefined : { y: -4 }}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.995 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                >
                   <div className={`project-visual accent-${project.accent}`}>
                     <span className="project-number">0{project.id}</span>
                     <span className="project-visual-label">Image reserved</span>
                   </div>
-                  <div className="project-card-body">
+                  <div className="project-card-body" data-reveal-item>
                     <div className="project-meta">
                       <span>{project.category}</span>
                       <span>{projectTypeLabels[project.type]}</span>
@@ -380,7 +394,7 @@ function App() {
                       View project brief <span aria-hidden="true">↗</span>
                     </button>
                   </div>
-                </article>
+                </motion.article>
               ))}
             </div>
           </div>
@@ -388,16 +402,16 @@ function App() {
 
         <section className="expertise-section ivory-section section-padding" id="expertise">
           <div className="container">
-            <div className="section-heading-row expertise-heading">
+            <div className="section-heading-row expertise-heading" data-reveal>
               <div className="section-intro">
                 <p className="section-kicker">03 / Expertise</p>
                 <h2>Capabilities in<br /><em>progress.</em></h2>
               </div>
               <p className="section-description">A structured overview of the technical, creative, and personal practices that will define the portfolio.</p>
             </div>
-            <div className="skills-grid">
+            <div className="skills-grid" data-reveal-group>
               {skills.map((skill) => (
-                <article className="skill-card" key={skill.number}>
+                <article className="skill-card" data-reveal-item key={skill.number}>
                   <span className="skill-number">{skill.number}</span>
                   <h3>{skill.title}</h3>
                   <p>{skill.description}</p>
@@ -412,13 +426,13 @@ function App() {
 
         <section className="experience-section paper-section section-padding" id="experience">
           <div className="container experience-grid">
-            <div className="section-intro">
+            <div className="section-intro" data-reveal>
               <p className="section-kicker">04 / Experience &amp; education</p>
               <h2>A clear record of<br /><em>what comes next.</em></h2>
             </div>
-            <div className="timeline" aria-label="Experience and education placeholders">
+            <div className="timeline" data-reveal-group aria-label="Experience and education placeholders">
               {timelineEntries.map((entry, index) => (
-                <article className="timeline-entry" key={entry.label}>
+                <article className="timeline-entry" data-reveal-item key={entry.label}>
                   <div className="timeline-marker"><span>0{index + 1}</span></div>
                   <div className="timeline-copy">
                     <span className="entry-label">{entry.label}</span>
@@ -434,12 +448,12 @@ function App() {
 
         <section className="contact-section navy-section section-padding" id="contact">
           <div className="container contact-grid">
-            <div className="contact-copy">
+            <div className="contact-copy" data-reveal>
               <p className="section-kicker light-kicker">05 / Contact</p>
               <h2>Begin with a<br /><em>conversation.</em></h2>
               <p className="contact-intro">This is the future home for a clear invitation to connect, collaborate, or learn more about the work.</p>
             </div>
-            <div className="contact-panel">
+            <div className="contact-panel" data-reveal>
               <div className="contact-row">
                 <span className="detail-label light-label">Email</span>
                 <span className="reserved-value">Contact address reserved</span>
@@ -477,76 +491,90 @@ function App() {
         </div>
       </footer>
 
-      {selectedProject && (
-        <div className="modal-backdrop" role="presentation" onClick={closeProject}>
-          <div
-            ref={modalRef}
-            className="project-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="project-modal-title"
-            aria-describedby="project-modal-description"
-            onKeyDown={handleModalKeyDown}
-            onClick={(event) => event.stopPropagation()}
+      <AnimatePresence>
+        {selectedProject && (
+          <motion.div
+            className="modal-backdrop"
+            role="presentation"
+            onClick={closeProject}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
           >
-            <button ref={closeButtonRef} className="modal-close" type="button" aria-label="Close project brief" onClick={closeProject}>×</button>
-            <span className="section-kicker">{selectedProject.category} / {projectTypeLabels[selectedProject.type]}</span>
-            <h2 id="project-modal-title">{selectedProject.title}</h2>
-            <p id="project-modal-description" className="modal-description">{selectedProject.description}</p>
+            <motion.div
+              ref={modalRef}
+              className="project-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="project-modal-title"
+              aria-describedby="project-modal-description"
+              onKeyDown={handleModalKeyDown}
+              onClick={(event) => event.stopPropagation()}
+              initial={prefersReducedMotion ? false : { y: 12, scale: 0.985, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={prefersReducedMotion ? undefined : { y: 8, scale: 0.99, opacity: 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.28, ease: 'easeOut' }}
+            >
+              <button ref={closeButtonRef} className="modal-close" type="button" aria-label="Close project brief" onClick={closeProject}>×</button>
+              <span className="section-kicker">{selectedProject.category} / {projectTypeLabels[selectedProject.type]}</span>
+              <h2 id="project-modal-title">{selectedProject.title}</h2>
+              <p id="project-modal-description" className="modal-description">{selectedProject.description}</p>
 
-            <div className="modal-meta">
-              <div className="modal-meta-item">
-                <span className="detail-label">Project type</span>
-                <span>{projectTypeLabels[selectedProject.type]}</span>
-              </div>
-              <div className="modal-meta-item">
-                <span className="detail-label">Status</span>
-                <span>{selectedProject.status}</span>
-              </div>
-            </div>
-
-            <div className="modal-overview">
-              <span className="detail-label">Overview</span>
-              <p>{selectedProject.overview}</p>
-            </div>
-
-            {selectedProject.preview && (
-              <div className="modal-overview">
-                <span className="detail-label">Preview</span>
-                <p>{selectedProject.preview}</p>
-              </div>
-            )}
-
-            {selectedProject.tools && selectedProject.tools.length > 0 && (
-              <div className="modal-tools">
-                <span className="detail-label">Tools</span>
-                <div className="tool-list">
-                  {selectedProject.tools.map((tool) => <span key={tool}>{tool}</span>)}
+              <div className="modal-meta">
+                <div className="modal-meta-item">
+                  <span className="detail-label">Project type</span>
+                  <span>{projectTypeLabels[selectedProject.type]}</span>
+                </div>
+                <div className="modal-meta-item">
+                  <span className="detail-label">Status</span>
+                  <span>{selectedProject.status}</span>
                 </div>
               </div>
-            )}
 
-            {modalActions.length > 0 && (
-              <div className="modal-actions" aria-label="Project actions">
-                {modalActions.map((action) => (
-                  <a
-                    key={action.label}
-                    className={`button ${action.primary ? 'button-primary' : 'button-secondary'}`}
-                    href={action.href}
-                    target={action.external ? '_blank' : undefined}
-                    rel={action.external ? 'noreferrer' : undefined}
-                    download={action.download ? true : undefined}
-                  >
-                    {action.label} <span aria-hidden="true">↗</span>
-                  </a>
-                ))}
+              <div className="modal-overview">
+                <span className="detail-label">Overview</span>
+                <p>{selectedProject.overview}</p>
               </div>
-            )}
 
-            <button className="button button-dark modal-close-action" type="button" onClick={closeProject}>Close brief</button>
-          </div>
-        </div>
-      )}
+              {selectedProject.preview && (
+                <div className="modal-overview">
+                  <span className="detail-label">Preview</span>
+                  <p>{selectedProject.preview}</p>
+                </div>
+              )}
+
+              {selectedProject.tools && selectedProject.tools.length > 0 && (
+                <div className="modal-tools">
+                  <span className="detail-label">Tools</span>
+                  <div className="tool-list">
+                    {selectedProject.tools.map((tool) => <span key={tool}>{tool}</span>)}
+                  </div>
+                </div>
+              )}
+
+              {modalActions.length > 0 && (
+                <div className="modal-actions" aria-label="Project actions">
+                  {modalActions.map((action) => (
+                    <a
+                      key={action.label}
+                      className={`button ${action.primary ? 'button-primary' : 'button-secondary'}`}
+                      href={action.href}
+                      target={action.external ? '_blank' : undefined}
+                      rel={action.external ? 'noreferrer' : undefined}
+                      download={action.download ? true : undefined}
+                    >
+                      {action.label} <span aria-hidden="true">↗</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              <button className="button button-dark modal-close-action" type="button" onClick={closeProject}>Close brief</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
